@@ -25,6 +25,7 @@ router.get('/monthly-revenue', orderController.getMonthlyRevenue);
 // section-3($group+$lookup)
 router.get('/avg-order-category', orderController.getAvgOrderValuePerCategory);
 router.get('/daily-revenue', orderController.getDailyRevenue);
+router.get('/dashboard', orderController.getDashboardDetails);
 
 
 module.exports = router;

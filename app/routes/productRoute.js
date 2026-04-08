@@ -13,5 +13,6 @@ router.get('/sold-product', productController.countTotalQuantitySoldProductWise)
 
 // section-3($group+$lookup)
 router.get('/top-selling-product', productController.topSellingProduct);
+router.get('/never-ordered', productController.naverOrderedProduct);
 
 module.exports = router;

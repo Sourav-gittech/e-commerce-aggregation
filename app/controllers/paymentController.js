@@ -108,6 +108,38 @@ class PaymentController {
         }
     }
 
+    async getPaidAmount(req, res) {
+        try {
+
+            const payment = await orderModel.aggregate([
+                {
+                    $group: {
+                        _id: "$status",
+                        total_expense: {
+                            $sum: "$totalAmount"
+                        }
+                    }
+                },
+                {
+                    $match: {
+                        _id: "completed"
+                    }
+                }
+            ])
+
+            return res.status(STATUS_CODE.FORBIDDEN).json({
+                success: true,
+                message: 'Total paid amount',
+                data: payment
+            });
+        }
+        catch (err) {
+            return res.status(STATUS_CODE.SERVER_ERROR).json({
+                success: false,
+                message: err.message
+            });
+        }
+    }
 }
 
 module.exports = new PaymentController();

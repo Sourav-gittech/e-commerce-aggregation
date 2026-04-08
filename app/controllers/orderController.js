@@ -1,8 +1,10 @@
 const mongoose = require("mongoose");
 
+const userModel = require("../models/userModel");
 const orderModel = require("../models/orderModel");
 const orderItemModel = require("../models/orderItemModel");
 const productModel = require("../models/productModel");
+const paymentModel = require("../models/paymentModel");
 
 const STATUS_CODE = require("../utils/statusCode");
 
@@ -505,8 +507,8 @@ class OrderController {
                 {
                     $group: {
                         _id: "$product.category",
-                        avg_order_value:{
-                            $avg:"$totalAmount"
+                        avg_order_value: {
+                            $avg: "$totalAmount"
                         }
                     }
                 }
@@ -549,6 +551,90 @@ class OrderController {
                 success: true,
                 message: 'Daily revenue',
                 data: revenue
+            });
+        }
+        catch (err) {
+            return res.status(STATUS_CODE.SERVER_ERROR).json({
+                success: false,
+                message: err.message
+            });
+        }
+    }
+
+    async getDashboardDetails(req, res) {
+        try {
+
+            const user = await userModel.find();
+            const order = await orderModel.find({ status: "completed" });
+            const payment = await paymentModel.aggregate([
+                {
+                    $group: {
+                        _id: null,
+                        "totalAmount": {
+                            $sum: "$amount"
+                        }
+                    }
+                }
+            ]);
+            const topUser = await orderModel.aggregate([
+                {
+                    $match: {
+                        "status": "completed"
+                    }
+                },
+                {
+                    $lookup: {
+                        from: "users",
+                        foreignField: "_id",
+                        localField: "userId",
+                        as: "user"
+                    }
+                },
+                {
+                    $unwind: "$user"
+                },
+                {
+                    $group: {
+                        _id: "$userId",
+                        order: {
+                            $push: "$$ROOT"
+                        },
+                        totalExpense: {
+                            $sum: "$totalAmount"
+                        }
+                    }
+                },
+                {
+                    $sort: { "totalExpense": -1 }
+                },
+                {
+                    $limit: 1
+                },
+                {
+                    $addFields: {
+                        user: {
+                            $first: "$order.user"
+                        }
+                    }
+                },
+                {
+                    $project: {
+                        "_id": 1,
+                        "user": 1,
+                        "totalExpense": 1
+                    }
+                }
+            ])
+
+            return res.status(STATUS_CODE.OK).json({
+                success: true,
+                message: 'Dashboard data',
+                data: {
+                    totalUser: user.length,
+                    totalOrder: order.length,
+                    totalRevenue: payment?.[0].totalAmount,
+                    top_user: topUser?.[0]
+                }
             });
         }
         catch (err) {

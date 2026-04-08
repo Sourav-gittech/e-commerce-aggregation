@@ -231,6 +231,43 @@ class ProductController {
             });
         }
     }
+
+    async naverOrderedProduct(req, res) {
+        try {
+
+            const product = await productModel.aggregate([
+                {
+                    $lookup: {
+                        from: "orderitems",
+                        localField: "_id",
+                        foreignField: "productId",
+                        as: "order-items"
+                    }
+                },
+                {
+                    $match: {
+                        "order-items": { $size: 0 }
+                    }
+                },
+                {
+                    $project: {
+                        "order-items": 0
+                    }
+                }
+            ])
+            return res.status(STATUS_CODE.OK).json({
+                success: true,
+                message: 'Naver purchased product',
+                data: product
+            })
+        }
+        catch (err) {
+            return res.status(STATUS_CODE.SERVER_ERROR).json({
+                success: false,
+                message: err.message
+            });
+        }
+    }
 }
 
 module.exports = new ProductController();
